@@ -1,8 +1,16 @@
 # sittard
 
-Linux voice-to-text daemon. Hold a hotkey, speak, release. Text gets pasted into whatever field is focused.
+Sittard is [a Dutch city](https://en.wikipedia.org/wiki/Sittard) and a small
+daemon for transcribing your voice to text using local models by pressing
+a hotkey.
 
-All transcription runs locally. Nothing leaves your machine.
+I vibe-coded this out of frustration because tools like
+[Handy](https://handy.computer/) wouldn't work on my setup because of some
+seemingly Wayland-related issues with the GUI.
+
+It's quite extensible, so a new backend for stuff like pasting text and audio
+can be added trivially, but I haven't had the need for i yet. Feel free to open
+an issue if you want support for anything else added.
 
 ## Requirements
 
