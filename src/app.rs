@@ -17,6 +17,8 @@ pub struct StaidApp {
     state: AppState,
     event_rx: UnboundedReceiver<AppEvent>,
     event_tx: UnboundedSender<AppEvent>,
+    input_tx: UnboundedSender<InputEvent>,
+    input_rx: UnboundedReceiver<InputEvent>,
     cancel: CancellationToken,
 }
 
@@ -29,6 +31,7 @@ impl StaidApp {
         cancel: CancellationToken,
     ) -> Self {
         let (event_tx, event_rx) = tokio::sync::mpsc::unbounded_channel::<AppEvent>();
+        let (input_tx, input_rx) = tokio::sync::mpsc::unbounded_channel::<InputEvent>();
         Self {
             recorder,
             listener,
@@ -37,13 +40,15 @@ impl StaidApp {
             state: AppState::Idle,
             event_rx,
             event_tx,
+            input_tx,
+            input_rx,
             cancel,
         }
     }
 
     pub async fn start(&mut self) -> Result<()> {
         self.listener.start(
-            self.event_tx.clone(),
+            self.input_tx.clone(),
             self.cancel.clone(),
         )?;
 
@@ -83,9 +88,14 @@ impl StaidApp {
     async fn run_event_loop(&mut self) {
         loop {
             tokio::select! {
-                event = self.event_rx.recv() => {
-                    match event {
-                        Some(AppEvent::Input(input)) => self.handle_input(input).await,
+                input_event = self.input_rx.recv() => {
+                    match input_event {
+                        Some(input) => self.handle_input(input).await,
+                        None => break,
+                    }
+                }
+                app_event = self.event_rx.recv() => {
+                    match app_event {
                         Some(AppEvent::Shutdown) => {
                             self.handle_shutdown();
                             break;
@@ -100,6 +110,7 @@ impl StaidApp {
                             }
                             self.state = AppState::Idle;
                         }
+                        Some(AppEvent::Input(_)) => {}
                         None => break,
                     }
                 }
@@ -114,50 +125,44 @@ impl StaidApp {
     async fn handle_input(&mut self, event: InputEvent) {
         match event {
             InputEvent::KeyDown => {
-                match self.state {
-                    AppState::Idle => {
-                        if let Err(e) = self.recorder.start() {
-                            tracing::error!("failed to start recording: {e}");
-                            return;
-                        }
-                        self.state = AppState::Recording;
-                        tracing::info!("recording started");
+                if let AppState::Idle = self.state {
+                    if let Err(e) = self.recorder.start() {
+                        tracing::error!("failed to start recording: {e}");
+                        return;
                     }
-                    _ => {}
+                    self.state = AppState::Recording;
+                    tracing::info!("recording started");
                 }
             }
             InputEvent::KeyUp => {
-                match self.state {
-                    AppState::Recording => {
-                        match self.recorder.stop() {
-                            Ok(samples) => {
-                                tracing::info!("recording stopped");
+                if let AppState::Recording = self.state {
+                    match self.recorder.stop() {
+                        Ok(samples) => {
+                            tracing::info!("recording stopped");
 
-                                self.state = AppState::Transcribing;
+                            self.state = AppState::Transcribing;
 
-                                let engine = Arc::clone(&self.engine);
-                                let tx = self.event_tx.clone();
+                            let engine = Arc::clone(&self.engine);
+                            let tx = self.event_tx.clone();
 
-                                tokio::task::spawn_blocking(move || {
-                                    match engine.transcribe(samples) {
-                                        Ok(text) => {
-                                            tracing::info!("transcription: {text}");
-                                            let _ = tx.send(AppEvent::TranscriptionComplete(text));
-                                        }
-                                        Err(e) => {
-                                            tracing::error!("transcription failed: {e}");
-                                            let _ = tx.send(AppEvent::TranscriptionComplete(String::new()));
-                                        }
+                            tokio::task::spawn_blocking(move || {
+                                match engine.transcribe(samples) {
+                                    Ok(text) => {
+                                        tracing::info!("transcription: {text}");
+                                        let _ = tx.send(AppEvent::TranscriptionComplete(text));
                                     }
-                                });
-                            }
-                            Err(e) => {
-                                tracing::error!("failed to stop recording: {e}");
-                                self.state = AppState::Idle;
-                            }
+                                    Err(e) => {
+                                        tracing::error!("transcription failed: {e}");
+                                        let _ = tx.send(AppEvent::TranscriptionComplete(String::new()));
+                                    }
+                                }
+                            });
+                        }
+                        Err(e) => {
+                            tracing::error!("failed to stop recording: {e}");
+                            self.state = AppState::Idle;
                         }
                     }
-                    _ => {}
                 }
             }
         }
