@@ -1,6 +1,5 @@
 use anyhow::Result;
 use clap::Parser;
-use std::sync::Arc;
 use staid::app::StaidApp;
 use staid::audio::cpal_recorder::CpalRecorder;
 use staid::config::{AppConfig, Cli, Commands};
@@ -9,6 +8,7 @@ use staid::model::huggingface::HuggingFaceProvider;
 use staid::model::ModelProvider;
 use staid::output::wtype_output::WtypeOutput;
 use staid::transcribe::whisper_engine::WhisperEngine;
+use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 
 fn init_tracing(cli: &Cli) {
@@ -52,10 +52,17 @@ async fn main() -> Result<()> {
             for name in &keys {
                 println!("{name}");
             }
+            println!();
+            println!("modifier aliases (match left or right):");
+            let aliases = staid::input::keymap::list_modifier_aliases();
+            for name in &aliases {
+                println!("  {name}");
+            }
+            println!();
+            println!("combine with + (e.g. --hotkey \"ctrl+shift+f12\")");
         }
         Some(Commands::DownloadModel { model }) => {
-            let model_size = model
-                .unwrap_or(staid::config::ModelSize::BaseEn);
+            let model_size = model.unwrap_or(staid::config::ModelSize::BaseEn);
             let provider = HuggingFaceProvider::new(model_size);
             let path = provider.ensure_model().await?;
             println!("model downloaded to {}", path.display());
