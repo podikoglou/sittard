@@ -14,7 +14,10 @@ fn init_tracing(cli: &Cli) {
             _ => tracing::Level::DEBUG,
         }
     };
-    tracing_subscriber::fmt().with_max_level(level).try_init().ok();
+    tracing_subscriber::fmt()
+        .with_max_level(level)
+        .try_init()
+        .ok();
 }
 
 #[tokio::main]
@@ -28,13 +31,22 @@ async fn main() -> Result<()> {
 
     match &cli.command {
         Some(Commands::ListDevices) => {
-            println!("Listing audio devices... (not yet implemented)");
+            let devices = staid::audio::list_devices()?;
+            if devices.is_empty() {
+                println!("no audio input devices found");
+            } else {
+                for name in &devices {
+                    println!("{}", name);
+                }
+            }
         }
         Some(Commands::ListKeys) => {
             println!("Listing key names... (not yet implemented)");
         }
         Some(Commands::DownloadModel { model }) => {
-            let model_size = model.clone().or_else(|| cli.model.clone())
+            let model_size = model
+                .clone()
+                .or_else(|| cli.model.clone())
                 .unwrap_or(staid::config::ModelSize::BaseEn);
             let provider = HuggingFaceProvider::new(model_size);
             let path = provider.ensure_model().await?;
@@ -43,7 +55,10 @@ async fn main() -> Result<()> {
         None => {
             tracing::info!("staid starting");
 
-            let model_size = cli.model.clone().unwrap_or(staid::config::ModelSize::BaseEn);
+            let model_size = cli
+                .model
+                .clone()
+                .unwrap_or(staid::config::ModelSize::BaseEn);
             let provider = HuggingFaceProvider::new(model_size);
             let model_path = provider.ensure_model().await?;
             tracing::info!("using model at {}", model_path.display());
