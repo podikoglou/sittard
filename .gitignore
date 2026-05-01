@@ -1,1 +1,9 @@
 .reference
+
+
+# Added by cargo
+
+/target
+*.bin
+*.wav
+
