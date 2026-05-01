@@ -1,8 +1,15 @@
 use anyhow::Result;
 use clap::Parser;
-use staid::config::{Cli, Commands};
+use std::sync::Arc;
+use staid::app::StaidApp;
+use staid::audio::cpal_recorder::CpalRecorder;
+use staid::config::{AppConfig, Cli, Commands};
+use staid::input::evdev_listener::EvdevListener;
 use staid::model::huggingface::HuggingFaceProvider;
 use staid::model::ModelProvider;
+use staid::output::wtype_output::WtypeOutput;
+use staid::transcribe::whisper_engine::WhisperEngine;
+use tokio_util::sync::CancellationToken;
 
 fn init_tracing(cli: &Cli) {
     let level = if cli.debug {
@@ -29,7 +36,7 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
     init_tracing(&cli);
 
-    match &cli.command {
+    match cli.command {
         Some(Commands::ListDevices) => {
             let devices = staid::audio::list_devices()?;
             if devices.is_empty() {
@@ -48,8 +55,6 @@ async fn main() -> Result<()> {
         }
         Some(Commands::DownloadModel { model }) => {
             let model_size = model
-                .clone()
-                .or_else(|| cli.model.clone())
                 .unwrap_or(staid::config::ModelSize::BaseEn);
             let provider = HuggingFaceProvider::new(model_size);
             let path = provider.ensure_model().await?;
@@ -58,13 +63,30 @@ async fn main() -> Result<()> {
         None => {
             tracing::info!("staid starting");
 
-            let model_size = cli
-                .model
-                .clone()
-                .unwrap_or(staid::config::ModelSize::BaseEn);
+            let config = AppConfig::from_cli(cli);
+
+            let model_size = config.model_size.clone();
             let provider = HuggingFaceProvider::new(model_size);
             let model_path = provider.ensure_model().await?;
             tracing::info!("using model at {}", model_path.display());
+
+            let recorder = CpalRecorder::new(config.device.as_deref())?;
+            let listener = EvdevListener::new(&config.hotkey)?;
+            let engine = WhisperEngine::new(&model_path, config.threads)?;
+            let output = WtypeOutput::new()?;
+
+            let cancel = CancellationToken::new();
+
+            let mut app = StaidApp::new(
+                Box::new(recorder),
+                Box::new(listener),
+                Arc::new(engine),
+                Box::new(output),
+                cancel,
+                config.mode,
+            );
+
+            app.start().await?;
         }
     }
 
