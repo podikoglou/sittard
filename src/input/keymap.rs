@@ -172,6 +172,7 @@ pub fn parse_key_name(name: &str) -> anyhow::Result<Key> {
     ))
 }
 
+#[derive(Clone)]
 pub struct HotkeyCombo {
     pub slots: Vec<HashSet<Key>>,
     pub is_modifier_only: bool,

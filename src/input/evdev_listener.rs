@@ -1,24 +1,26 @@
 use anyhow::anyhow;
 use anyhow::Result;
 use evdev::{Device, InputEventKind, Key};
+use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_util::sync::CancellationToken;
 
 use super::keymap;
+use super::keymap::HotkeyCombo;
 use super::HotkeyListener;
 use crate::types::InputEvent;
 
 pub struct EvdevListener {
-    target_key: Key,
+    combo: HotkeyCombo,
 }
 
 impl EvdevListener {
     #[allow(clippy::missing_errors_doc)]
-    pub fn new(key_name: &str) -> Result<Self> {
-        let target_key = keymap::parse_key_name(key_name)?;
-        Ok(Self { target_key })
+    pub fn new(hotkey_spec: &str) -> Result<Self> {
+        let combo = keymap::parse_hotkey_combo(hotkey_spec)?;
+        Ok(Self { combo })
     }
 }
 
@@ -28,7 +30,7 @@ impl HotkeyListener for EvdevListener {
             .filter_map(|(_, device)| {
                 device
                     .supported_keys()
-                    .is_some_and(|keys| keys.contains(self.target_key))
+                    .is_some_and(|keys| self.combo.all_keys.iter().any(|k| keys.contains(*k)))
                     .then_some(device)
             })
             .collect();
@@ -47,12 +49,12 @@ impl HotkeyListener for EvdevListener {
         });
 
         for device in devices {
-            let target_key = self.target_key;
+            let combo = self.combo.clone();
             let sender_clone = sender.clone();
             let cancelled_clone = cancelled.clone();
 
             std::thread::spawn(move || {
-                listen_on_device(device, target_key, sender_clone, cancelled_clone);
+                listen_on_device(device, combo, sender_clone, cancelled_clone);
             });
         }
 
@@ -63,10 +65,13 @@ impl HotkeyListener for EvdevListener {
 #[allow(clippy::needless_pass_by_value)]
 fn listen_on_device(
     mut device: Device,
-    target_key: Key,
+    combo: HotkeyCombo,
     sender: UnboundedSender<InputEvent>,
     cancelled: Arc<AtomicBool>,
 ) {
+    let mut held_keys: HashSet<Key> = HashSet::new();
+    let mut matched = false;
+
     loop {
         if cancelled.load(Ordering::Relaxed) {
             break;
@@ -82,17 +87,29 @@ fn listen_on_device(
             }
 
             if let InputEventKind::Key(key) = ev.kind() {
-                if key == target_key {
-                    match ev.value() {
-                        1 => {
-                            let _ = sender.send(InputEvent::KeyDown);
-                        }
-                        0 => {
-                            let _ = sender.send(InputEvent::KeyUp);
-                        }
-                        _ => {}
-                    }
+                if !combo.all_keys.contains(&key) {
+                    continue;
                 }
+
+                match ev.value() {
+                    1 => {
+                        held_keys.insert(key);
+                    }
+                    0 => {
+                        held_keys.remove(&key);
+                    }
+                    _ => continue,
+                }
+
+                let now_matched = combo.matches(&held_keys);
+
+                if now_matched && !matched {
+                    let _ = sender.send(InputEvent::KeyDown);
+                } else if !now_matched && matched {
+                    let _ = sender.send(InputEvent::KeyUp);
+                }
+
+                matched = now_matched;
             }
         }
     }
@@ -125,7 +142,7 @@ fn diagnose_no_devices() -> anyhow::Error {
             .filter_map(|(_, d)| d.name().map(std::string::ToString::to_string))
             .collect();
         anyhow!(
-            "found {} keyboard(s) ({}) but none support the target key. try a different key with --hotkey",
+            "found {} keyboard(s) ({}) but none support the hotkey. try a different key with --hotkey",
             keyboards.len(),
             names.join(", ")
         )
