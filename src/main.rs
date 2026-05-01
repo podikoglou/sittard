@@ -36,7 +36,7 @@ async fn main() -> Result<()> {
                 println!("no audio input devices found");
             } else {
                 for name in &devices {
-                    println!("{}", name);
+                    println!("{name}");
                 }
             }
         }
