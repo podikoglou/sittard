@@ -1,18 +1,18 @@
-use crate::config::ModelSize;
+use crate::config::ModelEngine;
 use anyhow::{anyhow, Result};
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::path::PathBuf;
 use tokio::io::AsyncWriteExt;
 
-pub struct HuggingFaceProvider {
-    model_size: ModelSize,
+pub struct SherpaOnnxProvider {
+    engine: ModelEngine,
 }
 
-impl HuggingFaceProvider {
+impl SherpaOnnxProvider {
     #[must_use]
-    pub fn new(model_size: ModelSize) -> Self {
-        Self { model_size }
+    pub fn new(engine: ModelEngine) -> Self {
+        Self { engine }
     }
 
     fn model_dir() -> Result<PathBuf> {
@@ -21,12 +21,19 @@ impl HuggingFaceProvider {
     }
 
     fn model_filename(&self) -> String {
-        format!("ggml-{}.bin", self.model_size)
+        match &self.engine {
+            ModelEngine::Parakeet => {
+                "sherpa-onnx-nemo-parakeet_tdt_ctc_110m-en-36000-int8".to_string()
+            }
+            ModelEngine::Moonshine => "sherpa-onnx-moonshine-tiny-en-int8".to_string(),
+            ModelEngine::WhisperTiny => "sherpa-onnx-whisper-tiny.en".to_string(),
+            ModelEngine::WhisperBase => "sherpa-onnx-whisper-base".to_string(),
+        }
     }
 
     fn download_url(&self) -> String {
         format!(
-            "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/{}",
+            "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/{}.tar.bz2",
             self.model_filename()
         )
     }
@@ -36,8 +43,13 @@ impl HuggingFaceProvider {
         std::fs::create_dir_all(&dir)?;
 
         let filename = self.model_filename();
-        let final_path = dir.join(&filename);
-        let temp_path = dir.join(format!("{filename}.tmp"));
+        let final_dir = dir.join(&filename);
+        let temp_path = dir.join(format!("{filename}.tar.bz2.tmp"));
+
+        if final_dir.exists() {
+            tracing::info!("model already extracted at {}", final_dir.display());
+            return Ok(final_dir);
+        }
 
         let url = self.download_url();
         tracing::info!("downloading model from {}", url);
@@ -68,13 +80,24 @@ impl HuggingFaceProvider {
         file.flush().await?;
         pb.finish_with_message("done");
 
-        std::fs::rename(&temp_path, &final_path)?;
-        tracing::info!("model saved to {}", final_path.display());
-        Ok(final_path)
+        tracing::info!("extracting model archive");
+        let extract_dir = dir.clone();
+        tokio::task::spawn_blocking(move || {
+            let file = std::fs::File::open(&temp_path)?;
+            let decoder = bzip2::read::BzDecoder::new(file);
+            let mut archive = tar::Archive::new(decoder);
+            archive.unpack(&extract_dir)?;
+            std::fs::remove_file(&temp_path)?;
+            Ok::<(), anyhow::Error>(())
+        })
+        .await??;
+
+        tracing::info!("model extracted to {}", final_dir.display());
+        Ok(final_dir)
     }
 }
 
-impl super::ModelProvider for HuggingFaceProvider {
+impl super::ModelProvider for SherpaOnnxProvider {
     fn model_path(&self) -> Result<PathBuf> {
         let dir = Self::model_dir()?;
         let path = dir.join(self.model_filename());

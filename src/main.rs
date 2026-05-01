@@ -4,10 +4,10 @@ use staid::app::StaidApp;
 use staid::audio::cpal_recorder::CpalRecorder;
 use staid::config::{AppConfig, Cli, Commands};
 use staid::input::evdev_listener::EvdevListener;
-use staid::model::huggingface::HuggingFaceProvider;
+use staid::model::huggingface::SherpaOnnxProvider;
 use staid::model::ModelProvider;
 use staid::output::wtype_output::WtypeOutput;
-use staid::transcribe::whisper_engine::WhisperEngine;
+use staid::transcribe::whisper_engine::SherpaOnnxEngine;
 use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 
@@ -61,9 +61,9 @@ async fn main() -> Result<()> {
             println!();
             println!("combine with + (e.g. --hotkey \"ctrl+shift+f12\")");
         }
-        Some(Commands::DownloadModel { model }) => {
-            let model_size = model.unwrap_or(staid::config::ModelSize::BaseEn);
-            let provider = HuggingFaceProvider::new(model_size);
+        Some(Commands::DownloadModel { engine }) => {
+            let engine = engine.unwrap_or(staid::config::ModelEngine::Parakeet);
+            let provider = SherpaOnnxProvider::new(engine);
             let path = provider.ensure_model().await?;
             println!("model downloaded to {}", path.display());
         }
@@ -72,14 +72,13 @@ async fn main() -> Result<()> {
 
             let config = AppConfig::from_cli(cli);
 
-            let model_size = config.model_size.clone();
-            let provider = HuggingFaceProvider::new(model_size);
+            let provider = SherpaOnnxProvider::new(config.engine);
             let model_path = provider.ensure_model().await?;
             tracing::info!("using model at {}", model_path.display());
 
             let recorder = CpalRecorder::new(config.device.as_deref())?;
             let listener = EvdevListener::new(&config.hotkey)?;
-            let engine = WhisperEngine::new(&model_path, config.threads)?;
+            let engine = SherpaOnnxEngine::new(&model_path, config.engine, config.threads)?;
             let output = WtypeOutput::new()?;
 
             let cancel = CancellationToken::new();
