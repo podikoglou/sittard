@@ -1,0 +1,10 @@
+pre-commit:
+  commands:
+    clippy:
+      glob: "src/**/*.rs"
+      run: cargo clippy --all-targets -- -D warnings -W clippy::pedantic
+      stage_fixed: true
+    fmt:
+      glob: "src/**/*.rs"
+      run: cargo fmt --all
+      stage_fixed: true
