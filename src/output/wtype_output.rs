@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{ensure, Context, Result};
 use std::process::Command;
 
 use super::TextOutput;
@@ -17,11 +17,11 @@ fn which_wtype() -> Result<()> {
     Command::new("which")
         .arg("wtype")
         .output()
-        .map_err(|_| anyhow!("wtype not found. install: xbps-install wtype"))?
+        .context("wtype not found. install: xbps-install wtype")?
         .status
         .success()
         .then_some(())
-        .ok_or_else(|| anyhow!("wtype not found. install: xbps-install wtype"))
+        .ok_or_else(|| anyhow::anyhow!("wtype not found. install: xbps-install wtype"))
 }
 
 impl TextOutput for WtypeOutput {
@@ -33,11 +33,9 @@ impl TextOutput for WtypeOutput {
         let status = Command::new("wtype")
             .arg(text)
             .status()
-            .map_err(|_| anyhow!("wtype not found. install: xbps-install wtype"))?;
+            .context("wtype not found. install: xbps-install wtype")?;
 
-        if !status.success() {
-            return Err(anyhow!("wtype exited with status: {status}"));
-        }
+        ensure!(status.success(), "wtype exited with status: {status}");
 
         Ok(())
     }
