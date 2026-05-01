@@ -41,7 +41,10 @@ async fn main() -> Result<()> {
             }
         }
         Some(Commands::ListKeys) => {
-            println!("Listing key names... (not yet implemented)");
+            let keys = staid::input::keymap::list_key_names();
+            for name in &keys {
+                println!("{name}");
+            }
         }
         Some(Commands::DownloadModel { model }) => {
             let model_size = model

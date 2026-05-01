@@ -1862,6 +1862,7 @@ dependencies = [
  "cpal",
  "dirs",
  "evdev",
+ "futures-util",
  "hound",
  "indicatif",
  "num_cpus",

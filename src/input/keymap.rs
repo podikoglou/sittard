@@ -112,6 +112,7 @@ fn get_key_map() -> &'static HashMap<&'static str, Key> {
     KEY_MAP.get_or_init(build_key_map)
 }
 
+#[allow(clippy::missing_errors_doc)]
 pub fn parse_key_name(name: &str) -> anyhow::Result<Key> {
     let key_map = get_key_map();
 
@@ -119,10 +120,7 @@ pub fn parse_key_name(name: &str) -> anyhow::Result<Key> {
         return Ok(key);
     }
 
-    if let Some(hex) = name
-        .strip_prefix("0x")
-        .or_else(|| name.strip_prefix("0X"))
-    {
+    if let Some(hex) = name.strip_prefix("0x").or_else(|| name.strip_prefix("0X")) {
         if let Ok(n) = u16::from_str_radix(hex, 16) {
             return Ok(Key::new(n));
         }
@@ -133,14 +131,14 @@ pub fn parse_key_name(name: &str) -> anyhow::Result<Key> {
     }
 
     Err(anyhow!(
-        "Unknown key name: '{}'. Use 'staid list-keys' to see valid names.",
-        name
+        "Unknown key name: '{name}'. Use 'staid list-keys' to see valid names."
     ))
 }
 
+#[must_use]
 pub fn list_key_names() -> Vec<&'static str> {
     let key_map = get_key_map();
     let mut keys: Vec<_> = key_map.keys().copied().collect();
-    keys.sort();
+    keys.sort_unstable();
     keys
 }
