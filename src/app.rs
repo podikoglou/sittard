@@ -4,6 +4,7 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio_util::sync::CancellationToken;
 
 use crate::audio::AudioRecorder;
+use crate::config::InteractionMode;
 use crate::input::HotkeyListener;
 use crate::output::TextOutput;
 use crate::transcribe::Transcriber;
@@ -20,6 +21,7 @@ pub struct StaidApp {
     input_tx: UnboundedSender<InputEvent>,
     input_rx: UnboundedReceiver<InputEvent>,
     cancel: CancellationToken,
+    mode: InteractionMode,
 }
 
 impl StaidApp {
@@ -29,6 +31,7 @@ impl StaidApp {
         engine: Arc<dyn Transcriber>,
         output: Box<dyn TextOutput>,
         cancel: CancellationToken,
+        mode: InteractionMode,
     ) -> Self {
         let (event_tx, event_rx) = tokio::sync::mpsc::unbounded_channel::<AppEvent>();
         let (input_tx, input_rx) = tokio::sync::mpsc::unbounded_channel::<InputEvent>();
@@ -43,6 +46,7 @@ impl StaidApp {
             input_tx,
             input_rx,
             cancel,
+            mode,
         }
     }
 
@@ -123,6 +127,13 @@ impl StaidApp {
     }
 
     async fn handle_input(&mut self, event: InputEvent) {
+        match self.mode {
+            InteractionMode::Hold => self.handle_hold(event).await,
+            InteractionMode::Toggle => self.handle_toggle(event).await,
+        }
+    }
+
+    async fn handle_hold(&mut self, event: InputEvent) {
         match event {
             InputEvent::KeyDown => {
                 if let AppState::Idle = self.state {
@@ -136,34 +147,57 @@ impl StaidApp {
             }
             InputEvent::KeyUp => {
                 if let AppState::Recording = self.state {
-                    match self.recorder.stop() {
-                        Ok(samples) => {
-                            tracing::info!("recording stopped");
+                    self.stop_and_transcribe().await;
+                }
+            }
+        }
+    }
 
-                            self.state = AppState::Transcribing;
+    async fn handle_toggle(&mut self, event: InputEvent) {
+        match event {
+            InputEvent::KeyDown => {
+                match self.state {
+                    AppState::Idle => {
+                        if let Err(e) = self.recorder.start() {
+                            tracing::error!("failed to start recording: {e}");
+                            return;
+                        }
+                        self.state = AppState::Recording;
+                        tracing::info!("recording started");
+                    }
+                    AppState::Recording => {
+                        self.stop_and_transcribe().await;
+                    }
+                    _ => {}
+                }
+            }
+            InputEvent::KeyUp => {}
+        }
+    }
 
-                            let engine = Arc::clone(&self.engine);
-                            let tx = self.event_tx.clone();
-
-                            tokio::task::spawn_blocking(move || {
-                                match engine.transcribe(samples) {
-                                    Ok(text) => {
-                                        tracing::info!("transcription: {text}");
-                                        let _ = tx.send(AppEvent::TranscriptionComplete(text));
-                                    }
-                                    Err(e) => {
-                                        tracing::error!("transcription failed: {e}");
-                                        let _ = tx.send(AppEvent::TranscriptionComplete(String::new()));
-                                    }
-                                }
-                            });
+    async fn stop_and_transcribe(&mut self) {
+        match self.recorder.stop() {
+            Ok(samples) => {
+                tracing::info!("recording stopped");
+                self.state = AppState::Transcribing;
+                let engine = Arc::clone(&self.engine);
+                let tx = self.event_tx.clone();
+                tokio::task::spawn_blocking(move || {
+                    match engine.transcribe(samples) {
+                        Ok(text) => {
+                            tracing::info!("transcription: {text}");
+                            let _ = tx.send(AppEvent::TranscriptionComplete(text));
                         }
                         Err(e) => {
-                            tracing::error!("failed to stop recording: {e}");
-                            self.state = AppState::Idle;
+                            tracing::error!("transcription failed: {e}");
+                            let _ = tx.send(AppEvent::TranscriptionComplete(String::new()));
                         }
                     }
-                }
+                });
+            }
+            Err(e) => {
+                tracing::error!("failed to stop recording: {e}");
+                self.state = AppState::Idle;
             }
         }
     }
