@@ -16,7 +16,7 @@ pub struct Cli {
     #[arg(long, short, default_value = "en", global = true)]
     pub language: String,
 
-    #[arg(long, short, default_value = "right_alt", global = true)]
+    #[arg(long, default_value = "right_alt", global = true)]
     pub hotkey: String,
 
     #[arg(long, short, action = clap::ArgAction::Count, global = true)]
