@@ -134,7 +134,7 @@ impl CpalRecorder {
                 |err| tracing::error!("audio stream error: {err}"),
                 None,
             )
-            .map_err(|e| anyhow!("i16 stream: {e}"))?;
+            .context("failed to build i16 audio input stream")?;
 
         Ok(stream)
     }
@@ -163,7 +163,7 @@ impl CpalRecorder {
                 |err| tracing::error!("audio stream error: {err}"),
                 None,
             )
-            .map_err(|e| anyhow!("f32 stream: {e}"))?;
+            .context("failed to build f32 audio input stream")?;
 
         Ok(stream)
     }
@@ -232,7 +232,7 @@ impl CpalRecorder {
                 |err| tracing::error!("audio stream error: {err}"),
                 None,
             )
-            .map_err(|e| anyhow!("i16 resampling stream: {e}"))?;
+            .context("failed to build i16 resampling audio input stream")?;
 
         Ok(stream)
     }
@@ -298,7 +298,7 @@ impl CpalRecorder {
                 |err| tracing::error!("audio stream error: {err}"),
                 None,
             )
-            .map_err(|e| anyhow!("f32 resampling stream: {e}"))?;
+            .context("failed to build f32 resampling audio input stream")?;
 
         Ok(stream)
     }
