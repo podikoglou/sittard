@@ -8,7 +8,7 @@ clap = { version = "4", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 cpal = "0.15"
 hound = "3.5"
-whisper-rs = { version = "0.13", features = ["raw-api"] }
+sherpa-onnx = "0.2"
 evdev = "0.12"
 reqwest = { version = "0.12", features = ["stream", "json"] }
 serde = { version = "1", features = ["derive"] }
