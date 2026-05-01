@@ -1,5 +1,5 @@
 use crate::config::ModelEngine;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::path::PathBuf;
@@ -55,16 +55,19 @@ impl SherpaOnnxProvider {
         tracing::info!("downloading model from {}", url);
 
         let response = reqwest::get(&url).await?;
-        if !response.status().is_success() {
-            return Err(anyhow!("download failed: HTTP {}", response.status()));
-        }
+        ensure!(
+            response.status().is_success(),
+            "download failed: HTTP {}",
+            response.status()
+        );
 
         let total_size = response.content_length().unwrap_or(0);
         let pb = ProgressBar::new(total_size);
         pb.set_style(
             ProgressStyle::with_template(
                 "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})"
-            )?
+            )
+            .context("failed to build progress bar style")?
             .progress_chars("#>-"),
         );
 
@@ -101,11 +104,8 @@ impl super::ModelProvider for SherpaOnnxProvider {
     fn model_path(&self) -> Result<PathBuf> {
         let dir = Self::model_dir()?;
         let path = dir.join(self.model_filename());
-        if path.exists() {
-            Ok(path)
-        } else {
-            Err(anyhow!("model not found at {}", path.display()))
-        }
+        ensure!(path.exists(), "model not found at {}", path.display());
+        Ok(path)
     }
 
     async fn ensure_model(&self) -> Result<PathBuf> {
