@@ -1,6 +1,13 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use std::fmt;
 
+#[derive(Clone, Default, ValueEnum)]
+pub enum InteractionMode {
+    #[default]
+    Hold,
+    Toggle,
+}
+
 #[derive(Parser)]
 #[command(name = "staid", about = "Voice-to-text daemon", version)]
 pub struct Cli {
@@ -18,6 +25,12 @@ pub struct Cli {
 
     #[arg(long, default_value = "right_alt", global = true)]
     pub hotkey: String,
+
+    #[arg(long, default_value = "hold", value_enum, global = true)]
+    pub mode: InteractionMode,
+
+    #[arg(long, short, default_value_t = num_cpus::get(), global = true)]
+    pub threads: usize,
 
     #[arg(long, short, action = clap::ArgAction::Count, global = true)]
     pub verbose: u8,
@@ -59,6 +72,7 @@ pub struct AppConfig {
     pub device: Option<String>,
     pub language: String,
     pub threads: usize,
+    pub mode: InteractionMode,
     pub verbose: u8,
     pub debug: bool,
 }
@@ -72,7 +86,8 @@ impl AppConfig {
             model_size,
             device: cli.device,
             language: cli.language,
-            threads: num_cpus::get(),
+            threads: cli.threads,
+            mode: cli.mode,
             verbose: cli.verbose,
             debug: cli.debug,
         }
