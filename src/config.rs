@@ -64,6 +64,7 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
+    #[must_use]
     pub fn from_cli(cli: Cli) -> Self {
         let model_size = cli.model.unwrap_or(ModelSize::BaseEn);
         Self {

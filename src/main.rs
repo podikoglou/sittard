@@ -1,6 +1,8 @@
 use anyhow::Result;
 use clap::Parser;
 use staid::config::{Cli, Commands};
+use staid::model::huggingface::HuggingFaceProvider;
+use staid::model::ModelProvider;
 
 fn init_tracing(cli: &Cli) {
     let level = if cli.debug {
@@ -15,7 +17,8 @@ fn init_tracing(cli: &Cli) {
     tracing_subscriber::fmt().with_max_level(level).try_init().ok();
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     std::env::set_var("PIPEWIRE_LOG_LEVEL", "0");
     std::env::set_var("JACK_NO_START_SERVER", "1");
     std::env::set_var("JACK_NO_AUDIO_RESERVATION", "1");
@@ -26,20 +29,26 @@ fn main() -> Result<()> {
     match &cli.command {
         Some(Commands::ListDevices) => {
             println!("Listing audio devices... (not yet implemented)");
-            return Ok(());
         }
         Some(Commands::ListKeys) => {
             println!("Listing key names... (not yet implemented)");
-            return Ok(());
         }
-        Some(Commands::DownloadModel { model: _ }) => {
-            println!("Downloading model... (not yet implemented)");
-            return Ok(());
+        Some(Commands::DownloadModel { model }) => {
+            let model_size = model.clone().or_else(|| cli.model.clone())
+                .unwrap_or(staid::config::ModelSize::BaseEn);
+            let provider = HuggingFaceProvider::new(model_size);
+            let path = provider.ensure_model().await?;
+            println!("model downloaded to {}", path.display());
         }
-        None => {}
-    }
+        None => {
+            tracing::info!("staid starting");
 
-    tracing::info!("staid starting");
+            let model_size = cli.model.clone().unwrap_or(staid::config::ModelSize::BaseEn);
+            let provider = HuggingFaceProvider::new(model_size);
+            let model_path = provider.ensure_model().await?;
+            tracing::info!("using model at {}", model_path.display());
+        }
+    }
 
     Ok(())
 }
