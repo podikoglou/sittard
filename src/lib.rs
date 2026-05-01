@@ -5,3 +5,5 @@ pub mod model;
 pub mod output;
 pub mod transcribe;
 pub mod types;
+
+pub use model::ModelProvider;
