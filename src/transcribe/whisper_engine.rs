@@ -65,27 +65,13 @@ fn create_recognizer(
 
     match engine {
         ModelEngine::Parakeet => {
-            let encoder = model_dir_path.join("encoder.int8.onnx");
-            let decoder = model_dir_path.join("decoder.int8.onnx");
-            let joiner = model_dir_path.join("joiner.int8.onnx");
+            let model = model_dir_path.join("model.int8.onnx");
             let tokens = model_dir_path.join("tokens.txt");
 
-            config.model_config.transducer.encoder = Some(
-                encoder
+            config.model_config.nemo_ctc.model = Some(
+                model
                     .to_str()
-                    .ok_or_else(|| anyhow!("encoder path invalid UTF-8"))?
-                    .to_string(),
-            );
-            config.model_config.transducer.decoder = Some(
-                decoder
-                    .to_str()
-                    .ok_or_else(|| anyhow!("decoder path invalid UTF-8"))?
-                    .to_string(),
-            );
-            config.model_config.transducer.joiner = Some(
-                joiner
-                    .to_str()
-                    .ok_or_else(|| anyhow!("joiner path invalid UTF-8"))?
+                    .ok_or_else(|| anyhow!("model path invalid UTF-8"))?
                     .to_string(),
             );
 
@@ -95,7 +81,7 @@ fn create_recognizer(
                     .ok_or_else(|| anyhow!("tokens path invalid UTF-8"))?
                     .to_string(),
             );
-            config.model_config.model_type = Some("nemo_transducer".to_string());
+            config.model_config.model_type = Some("nemo_ctc".to_string());
         }
         ModelEngine::Moonshine => {
             let encoder = model_dir_path.join("encoder.onnx");
