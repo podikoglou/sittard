@@ -12,7 +12,7 @@ fn init_tracing(cli: &Cli) {
             _ => tracing::Level::DEBUG,
         }
     };
-    tracing_subscriber::fmt().with_max_level(level).init();
+    tracing_subscriber::fmt().with_max_level(level).try_init().ok();
 }
 
 fn main() -> Result<()> {
@@ -32,7 +32,7 @@ fn main() -> Result<()> {
             println!("Listing key names... (not yet implemented)");
             return Ok(());
         }
-        Some(Commands::DownloadModel { model }) => {
+        Some(Commands::DownloadModel { model: _ }) => {
             println!("Downloading model... (not yet implemented)");
             return Ok(());
         }

@@ -18,5 +18,5 @@ dirs = "6"
 indicatif = "0.17"
 tokio-util = { version = "0.7", features = ["rt"] }
 tracing = "0.1"
-tracing-subscriber = "0.1"
+tracing-subscriber = { version = "0.3", features = ["fmt"] }
 num_cpus = "1"
