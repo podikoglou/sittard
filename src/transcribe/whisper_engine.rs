@@ -1,7 +1,7 @@
 use super::Transcriber;
 use crate::config::ModelEngine;
 use crate::types::AudioSamples;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use sherpa_onnx::{OfflineRecognizer, OfflineRecognizerConfig};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
@@ -159,10 +159,8 @@ impl Transcriber for SherpaOnnxEngine {
 
         self.tx
             .send((samples, reply_tx))
-            .map_err(|_| anyhow!("sherpa-onnx worker thread died"))?;
+            .context("sherpa-onnx worker thread died")?;
 
-        reply_rx
-            .recv()
-            .map_err(|_| anyhow!("sherpa-onnx worker thread died"))?
+        reply_rx.recv().context("sherpa-onnx worker thread died")?
     }
 }
