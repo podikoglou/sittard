@@ -168,7 +168,7 @@ pub fn parse_key_name(name: &str) -> anyhow::Result<Key> {
     }
 
     Err(anyhow!(
-        "Unknown key name: '{name}'. Use 'staid list-keys' to see valid names."
+        "Unknown key name: '{name}'. Use 'sittard list-keys' to see valid names."
     ))
 }
 

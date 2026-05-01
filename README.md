@@ -1,4 +1,4 @@
-# staid
+# sittard
 
 Linux voice-to-text daemon. Hold a hotkey, speak, release. Text gets pasted into whatever field is focused.
 
@@ -41,29 +41,29 @@ sudo apt install wtype
 
 ```
 # Run with defaults (right_alt hotkey, hold mode, parakeet engine)
-staid
+sittard
 
 # Use a different hotkey
-staid --hotkey f13
-staid --hotkey "ctrl+space"
-staid --hotkey "alt+shift+r"
+sittard --hotkey f13
+sittard --hotkey "ctrl+space"
+sittard --hotkey "alt+shift+r"
 
 # Toggle mode instead of hold
-staid --mode toggle
+sittard --mode toggle
 
 # Use a different transcription engine
-staid --engine moonshine
-staid --engine whisper-tiny
+sittard --engine moonshine
+sittard --engine whisper-tiny
 
 # List available keys for hotkey binding
-staid list-keys
+sittard list-keys
 
 # List audio input devices
-staid list-devices
+sittard list-devices
 
 # Download a model explicitly
-staid download-model
-staid download-model --engine moonshine
+sittard download-model
+sittard download-model --engine moonshine
 ```
 
 ## Hotkeys
@@ -80,7 +80,7 @@ Single keys or modifier combos. Combine with `+`.
 
 Modifier aliases match either side: `ctrl` = left or right ctrl. Specific sides work too: `left_ctrl`, `right_alt`, etc.
 
-Use `staid list-keys` to see all key names.
+Use `sittard list-keys` to see all key names.
 
 ## Modes
 
@@ -97,7 +97,7 @@ Use `staid list-keys` to see all key names.
 | `whisper-tiny` | OpenAI Whisper Tiny EN | Medium | Well-tested, decent accuracy. |
 | `whisper-base` | OpenAI Whisper Base EN | Slower | Better accuracy than tiny. |
 
-Models are downloaded automatically on first run to `~/.local/share/staid/models/`.
+Models are downloaded automatically on first run to `~/.local/share/sittard/models/`.
 
 ## Flags
 

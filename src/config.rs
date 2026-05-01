@@ -9,7 +9,7 @@ pub enum InteractionMode {
 }
 
 #[derive(Parser)]
-#[command(name = "staid", about = "Voice-to-text daemon", version)]
+#[command(name = "sittard", about = "Voice-to-text daemon", version)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>,

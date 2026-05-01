@@ -1,13 +1,13 @@
 use anyhow::Result;
 use clap::Parser;
-use staid::app::StaidApp;
-use staid::audio::cpal_recorder::CpalRecorder;
-use staid::config::{AppConfig, Cli, Commands};
-use staid::input::evdev_listener::EvdevListener;
-use staid::model::huggingface::SherpaOnnxProvider;
-use staid::model::ModelProvider;
-use staid::output::wtype_output::WtypeOutput;
-use staid::transcribe::whisper_engine::SherpaOnnxEngine;
+use sittard::app::SittardApp;
+use sittard::audio::cpal_recorder::CpalRecorder;
+use sittard::config::{AppConfig, Cli, Commands};
+use sittard::input::evdev_listener::EvdevListener;
+use sittard::model::huggingface::SherpaOnnxProvider;
+use sittard::model::ModelProvider;
+use sittard::output::wtype_output::WtypeOutput;
+use sittard::transcribe::whisper_engine::SherpaOnnxEngine;
 use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 
@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
 
     match cli.command {
         Some(Commands::ListDevices) => {
-            let devices = staid::audio::list_devices()?;
+            let devices = sittard::audio::list_devices()?;
             if devices.is_empty() {
                 println!("no audio input devices found");
             } else {
@@ -48,13 +48,13 @@ async fn main() -> Result<()> {
             }
         }
         Some(Commands::ListKeys) => {
-            let keys = staid::input::keymap::list_key_names();
+            let keys = sittard::input::keymap::list_key_names();
             for name in &keys {
                 println!("{name}");
             }
             println!();
             println!("modifier aliases (match left or right):");
-            let aliases = staid::input::keymap::list_modifier_aliases();
+            let aliases = sittard::input::keymap::list_modifier_aliases();
             for name in &aliases {
                 println!("  {name}");
             }
@@ -62,13 +62,13 @@ async fn main() -> Result<()> {
             println!("combine with + (e.g. --hotkey \"ctrl+shift+f12\")");
         }
         Some(Commands::DownloadModel { engine }) => {
-            let engine = engine.unwrap_or(staid::config::ModelEngine::Parakeet);
+            let engine = engine.unwrap_or(sittard::config::ModelEngine::Parakeet);
             let provider = SherpaOnnxProvider::new(engine);
             let path = provider.ensure_model().await?;
             println!("model downloaded to {}", path.display());
         }
         None => {
-            tracing::info!("staid starting");
+            tracing::info!("sittard starting");
 
             let config = AppConfig::from_cli(cli);
 
@@ -83,7 +83,7 @@ async fn main() -> Result<()> {
 
             let cancel = CancellationToken::new();
 
-            let mut app = StaidApp::new(
+            let mut app = SittardApp::new(
                 Box::new(recorder),
                 Box::new(listener),
                 Arc::new(engine),

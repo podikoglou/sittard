@@ -17,7 +17,7 @@ impl SherpaOnnxProvider {
 
     fn model_dir() -> Result<PathBuf> {
         let base = dirs::data_dir().ok_or_else(|| anyhow!("cannot determine data directory"))?;
-        Ok(base.join("staid").join("models"))
+        Ok(base.join("sittard").join("models"))
     }
 
     fn model_filename(&self) -> String {

@@ -10,7 +10,7 @@ use crate::output::TextOutput;
 use crate::transcribe::Transcriber;
 use crate::types::{AppEvent, AppState, InputEvent};
 
-pub struct StaidApp {
+pub struct SittardApp {
     recorder: Box<dyn AudioRecorder>,
     listener: Box<dyn HotkeyListener>,
     engine: Arc<dyn Transcriber>,
@@ -24,7 +24,7 @@ pub struct StaidApp {
     mode: InteractionMode,
 }
 
-impl StaidApp {
+impl SittardApp {
     pub fn new(
         recorder: Box<dyn AudioRecorder>,
         listener: Box<dyn HotkeyListener>,
@@ -57,7 +57,7 @@ impl StaidApp {
 
         self.register_signal_handlers();
 
-        tracing::info!("staid ready, listening for hotkey");
+        tracing::info!("sittard ready, listening for hotkey");
 
         self.run_event_loop().await;
 
