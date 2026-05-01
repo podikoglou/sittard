@@ -8,6 +8,7 @@ pub enum InputEvent {
 pub enum AppEvent {
     Input(InputEvent),
     Shutdown,
+    TranscriptionComplete(String),
 }
 
 pub enum AppState {
