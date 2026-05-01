@@ -2,3 +2,4 @@ Sittard is a cross-platform Rust daemon that records voice on hotkey, transcribe
 
 Build and check: `cargo fmt`, `cargo clippy -- -D warnings -W clippy::pedantic`, `cargo test`
 Linting/formatting is enforced via lefthook pre-commit hooks.
+Architecture: see ARCHITECTURE.md
