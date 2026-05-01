@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use evdev::Key;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
 
 fn build_key_map() -> HashMap<&'static str, Key> {
@@ -112,6 +112,43 @@ fn get_key_map() -> &'static HashMap<&'static str, Key> {
     KEY_MAP.get_or_init(build_key_map)
 }
 
+fn build_modifier_aliases() -> HashMap<&'static str, Vec<Key>> {
+    let mut m = HashMap::new();
+    m.insert("ctrl", vec![Key::KEY_LEFTCTRL, Key::KEY_RIGHTCTRL]);
+    m.insert("shift", vec![Key::KEY_LEFTSHIFT, Key::KEY_RIGHTSHIFT]);
+    m.insert("alt", vec![Key::KEY_LEFTALT, Key::KEY_RIGHTALT]);
+    m.insert("super", vec![Key::KEY_LEFTMETA, Key::KEY_RIGHTMETA]);
+    m
+}
+
+static MODIFIER_ALIASES: OnceLock<HashMap<&'static str, Vec<Key>>> = OnceLock::new();
+
+fn get_modifier_aliases() -> &'static HashMap<&'static str, Vec<Key>> {
+    MODIFIER_ALIASES.get_or_init(build_modifier_aliases)
+}
+
+static MODIFIER_KEYS: OnceLock<HashSet<Key>> = OnceLock::new();
+
+fn get_modifier_keys() -> &'static HashSet<Key> {
+    MODIFIER_KEYS.get_or_init(|| {
+        let mut set = HashSet::new();
+        set.insert(Key::KEY_LEFTCTRL);
+        set.insert(Key::KEY_RIGHTCTRL);
+        set.insert(Key::KEY_LEFTSHIFT);
+        set.insert(Key::KEY_RIGHTSHIFT);
+        set.insert(Key::KEY_LEFTALT);
+        set.insert(Key::KEY_RIGHTALT);
+        set.insert(Key::KEY_LEFTMETA);
+        set.insert(Key::KEY_RIGHTMETA);
+        set
+    })
+}
+
+#[must_use]
+pub fn is_modifier_key(key: Key) -> bool {
+    get_modifier_keys().contains(&key)
+}
+
 #[allow(clippy::missing_errors_doc)]
 pub fn parse_key_name(name: &str) -> anyhow::Result<Key> {
     let key_map = get_key_map();
@@ -135,10 +172,76 @@ pub fn parse_key_name(name: &str) -> anyhow::Result<Key> {
     ))
 }
 
+pub struct HotkeyCombo {
+    pub slots: Vec<HashSet<Key>>,
+    pub is_modifier_only: bool,
+    pub all_keys: HashSet<Key>,
+}
+
+impl HotkeyCombo {
+    #[must_use]
+    pub fn matches(&self, held: &HashSet<Key>) -> bool {
+        if held.is_empty() {
+            return false;
+        }
+        self.slots
+            .iter()
+            .all(|slot| slot.iter().any(|k| held.contains(k)))
+            && held.iter().all(|k| self.all_keys.contains(k))
+    }
+}
+
+#[allow(clippy::missing_errors_doc)]
+pub fn parse_hotkey_combo(spec: &str) -> anyhow::Result<HotkeyCombo> {
+    let tokens: Vec<&str> = spec.split('+').map(str::trim).collect();
+    if tokens.is_empty() {
+        return Err(anyhow!("empty hotkey specification"));
+    }
+
+    let mut slots: Vec<HashSet<Key>> = Vec::new();
+    let mut all_keys = HashSet::new();
+    let mut modifier_count = 0usize;
+
+    for token in &tokens {
+        if let Some(variants) = get_modifier_aliases().get(token) {
+            let slot: HashSet<Key> = variants.iter().copied().collect();
+            all_keys.extend(&slot);
+            slots.push(slot);
+            modifier_count += 1;
+        } else {
+            let key = parse_key_name(token)?;
+            let mut slot = HashSet::new();
+            slot.insert(key);
+            all_keys.insert(key);
+            slots.push(slot);
+        }
+    }
+
+    if slots.len() > 8 {
+        return Err(anyhow!("hotkey combo too complex: max 8 keys"));
+    }
+
+    let is_modifier_only = modifier_count == slots.len();
+
+    Ok(HotkeyCombo {
+        slots,
+        is_modifier_only,
+        all_keys,
+    })
+}
+
 #[must_use]
 pub fn list_key_names() -> Vec<&'static str> {
     let key_map = get_key_map();
     let mut keys: Vec<_> = key_map.keys().copied().collect();
     keys.sort_unstable();
     keys
+}
+
+#[must_use]
+pub fn list_modifier_aliases() -> Vec<&'static str> {
+    let aliases = get_modifier_aliases();
+    let mut names: Vec<_> = aliases.keys().copied().collect();
+    names.sort_unstable();
+    names
 }

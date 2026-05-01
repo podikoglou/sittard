@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use anyhow::Result;
+use std::sync::Arc;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio_util::sync::CancellationToken;
 
@@ -50,11 +50,10 @@ impl StaidApp {
         }
     }
 
+    #[allow(clippy::missing_errors_doc)]
     pub async fn start(&mut self) -> Result<()> {
-        self.listener.start(
-            self.input_tx.clone(),
-            self.cancel.clone(),
-        )?;
+        self.listener
+            .start(self.input_tx.clone(), self.cancel.clone())?;
 
         self.register_signal_handlers();
 
@@ -68,9 +67,9 @@ impl StaidApp {
     fn register_signal_handlers(&self) {
         let tx_int = self.event_tx.clone();
         tokio::spawn(async move {
-            if let Ok(mut sig) = tokio::signal::unix::signal(
-                tokio::signal::unix::SignalKind::interrupt(),
-            ) {
+            if let Ok(mut sig) =
+                tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
+            {
                 if sig.recv().await.is_some() {
                     let _ = tx_int.send(AppEvent::Shutdown);
                 }
@@ -79,9 +78,9 @@ impl StaidApp {
 
         let tx_term = self.event_tx.clone();
         tokio::spawn(async move {
-            if let Ok(mut sig) = tokio::signal::unix::signal(
-                tokio::signal::unix::SignalKind::terminate(),
-            ) {
+            if let Ok(mut sig) =
+                tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            {
                 if sig.recv().await.is_some() {
                     let _ = tx_term.send(AppEvent::Shutdown);
                 }
@@ -94,7 +93,7 @@ impl StaidApp {
             tokio::select! {
                 input_event = self.input_rx.recv() => {
                     match input_event {
-                        Some(input) => self.handle_input(input).await,
+                        Some(input) => self.handle_input(input),
                         None => break,
                     }
                 }
@@ -118,7 +117,7 @@ impl StaidApp {
                         None => break,
                     }
                 }
-                _ = self.cancel.cancelled() => {
+                () = self.cancel.cancelled() => {
                     self.handle_shutdown();
                     break;
                 }
@@ -126,14 +125,14 @@ impl StaidApp {
         }
     }
 
-    async fn handle_input(&mut self, event: InputEvent) {
+    fn handle_input(&mut self, event: InputEvent) {
         match self.mode {
-            InteractionMode::Hold => self.handle_hold(event).await,
-            InteractionMode::Toggle => self.handle_toggle(event).await,
+            InteractionMode::Hold => self.handle_hold(event),
+            InteractionMode::Toggle => self.handle_toggle(event),
         }
     }
 
-    async fn handle_hold(&mut self, event: InputEvent) {
+    fn handle_hold(&mut self, event: InputEvent) {
         match event {
             InputEvent::KeyDown => {
                 if let AppState::Idle = self.state {
@@ -147,51 +146,47 @@ impl StaidApp {
             }
             InputEvent::KeyUp => {
                 if let AppState::Recording = self.state {
-                    self.stop_and_transcribe().await;
+                    self.stop_and_transcribe();
                 }
             }
         }
     }
 
-    async fn handle_toggle(&mut self, event: InputEvent) {
+    fn handle_toggle(&mut self, event: InputEvent) {
         match event {
-            InputEvent::KeyDown => {
-                match self.state {
-                    AppState::Idle => {
-                        if let Err(e) = self.recorder.start() {
-                            tracing::error!("failed to start recording: {e}");
-                            return;
-                        }
-                        self.state = AppState::Recording;
-                        tracing::info!("recording started");
+            InputEvent::KeyDown => match self.state {
+                AppState::Idle => {
+                    if let Err(e) = self.recorder.start() {
+                        tracing::error!("failed to start recording: {e}");
+                        return;
                     }
-                    AppState::Recording => {
-                        self.stop_and_transcribe().await;
-                    }
-                    _ => {}
+                    self.state = AppState::Recording;
+                    tracing::info!("recording started");
                 }
-            }
+                AppState::Recording => {
+                    self.stop_and_transcribe();
+                }
+                AppState::Transcribing => {}
+            },
             InputEvent::KeyUp => {}
         }
     }
 
-    async fn stop_and_transcribe(&mut self) {
+    fn stop_and_transcribe(&mut self) {
         match self.recorder.stop() {
             Ok(samples) => {
                 tracing::info!("recording stopped");
                 self.state = AppState::Transcribing;
                 let engine = Arc::clone(&self.engine);
                 let tx = self.event_tx.clone();
-                tokio::task::spawn_blocking(move || {
-                    match engine.transcribe(samples) {
-                        Ok(text) => {
-                            tracing::info!("transcription: {text}");
-                            let _ = tx.send(AppEvent::TranscriptionComplete(text));
-                        }
-                        Err(e) => {
-                            tracing::error!("transcription failed: {e}");
-                            let _ = tx.send(AppEvent::TranscriptionComplete(String::new()));
-                        }
+                tokio::task::spawn_blocking(move || match engine.transcribe(samples) {
+                    Ok(text) => {
+                        tracing::info!("transcription: {text}");
+                        let _ = tx.send(AppEvent::TranscriptionComplete(text));
+                    }
+                    Err(e) => {
+                        tracing::error!("transcription failed: {e}");
+                        let _ = tx.send(AppEvent::TranscriptionComplete(String::new()));
                     }
                 });
             }

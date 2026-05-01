@@ -1,5 +1,6 @@
 pub struct AudioSamples(pub Vec<f32>);
 
+#[derive(Clone, Copy)]
 pub enum InputEvent {
     KeyDown,
     KeyUp,
