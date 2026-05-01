@@ -15,7 +15,7 @@ pub struct Cli {
     pub command: Option<Commands>,
 
     #[arg(long, short, value_enum, global = true)]
-    pub model: Option<ModelSize>,
+    pub engine: Option<ModelEngine>,
 
     #[arg(long, short, global = true)]
     pub device: Option<String>,
@@ -45,30 +45,32 @@ pub enum Commands {
     ListKeys,
     DownloadModel {
         #[arg(long, short, value_enum)]
-        model: Option<ModelSize>,
+        engine: Option<ModelEngine>,
     },
 }
 
 #[derive(Clone, ValueEnum)]
-pub enum ModelSize {
-    TinyEn,
-    BaseEn,
-    SmallEn,
+pub enum ModelEngine {
+    Parakeet,
+    Moonshine,
+    WhisperTiny,
+    WhisperBase,
 }
 
-impl fmt::Display for ModelSize {
+impl fmt::Display for ModelEngine {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ModelSize::TinyEn => write!(f, "tiny.en"),
-            ModelSize::BaseEn => write!(f, "base.en"),
-            ModelSize::SmallEn => write!(f, "small.en"),
+            ModelEngine::Parakeet => write!(f, "parakeet"),
+            ModelEngine::Moonshine => write!(f, "moonshine"),
+            ModelEngine::WhisperTiny => write!(f, "whisper-tiny"),
+            ModelEngine::WhisperBase => write!(f, "whisper-base"),
         }
     }
 }
 
 pub struct AppConfig {
     pub hotkey: String,
-    pub model_size: ModelSize,
+    pub engine: ModelEngine,
     pub device: Option<String>,
     pub language: String,
     pub threads: usize,
@@ -80,10 +82,10 @@ pub struct AppConfig {
 impl AppConfig {
     #[must_use]
     pub fn from_cli(cli: Cli) -> Self {
-        let model_size = cli.model.unwrap_or(ModelSize::BaseEn);
+        let engine = cli.engine.unwrap_or(ModelEngine::Parakeet);
         Self {
             hotkey: cli.hotkey,
-            model_size,
+            engine,
             device: cli.device,
             language: cli.language,
             threads: cli.threads,
