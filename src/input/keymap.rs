@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{bail, Result};
 use evdev::Key;
 use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
@@ -150,7 +150,7 @@ pub fn is_modifier_key(key: Key) -> bool {
 }
 
 #[allow(clippy::missing_errors_doc)]
-pub fn parse_key_name(name: &str) -> anyhow::Result<Key> {
+pub fn parse_key_name(name: &str) -> Result<Key> {
     let key_map = get_key_map();
 
     if let Some(&key) = key_map.get(name) {
@@ -167,9 +167,7 @@ pub fn parse_key_name(name: &str) -> anyhow::Result<Key> {
         return Ok(Key::new(n));
     }
 
-    Err(anyhow!(
-        "Unknown key name: '{name}'. Use 'sittard list-keys' to see valid names."
-    ))
+    bail!("Unknown key name: '{name}'. Use 'sittard list-keys' to see valid names.")
 }
 
 #[derive(Clone)]
@@ -193,10 +191,10 @@ impl HotkeyCombo {
 }
 
 #[allow(clippy::missing_errors_doc)]
-pub fn parse_hotkey_combo(spec: &str) -> anyhow::Result<HotkeyCombo> {
+pub fn parse_hotkey_combo(spec: &str) -> Result<HotkeyCombo> {
     let tokens: Vec<&str> = spec.split('+').map(str::trim).collect();
     if tokens.is_empty() {
-        return Err(anyhow!("empty hotkey specification"));
+        bail!("empty hotkey specification");
     }
 
     let mut slots: Vec<HashSet<Key>> = Vec::new();
@@ -219,7 +217,7 @@ pub fn parse_hotkey_combo(spec: &str) -> anyhow::Result<HotkeyCombo> {
     }
 
     if slots.len() > 8 {
-        return Err(anyhow!("hotkey combo too complex: max 8 keys"));
+        bail!("hotkey combo too complex: max 8 keys");
     }
 
     let is_modifier_only = modifier_count == slots.len();
