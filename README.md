@@ -11,6 +11,12 @@ All transcription runs locally. Nothing leaves your machine.
 - [wtype](https://github.com/atx/wtype) (for pasting text on Wayland)
 - cmake, C compiler (build time)
 
+## Install
+
+```
+cargo install --git https://github.com/podikoglou/sittard
+```
+
 ## Build
 
 ```
