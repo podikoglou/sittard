@@ -11,7 +11,7 @@ pub enum InteractionMode {
 #[derive(Clone, Default, ValueEnum)]
 pub enum Output {
     #[default]
-    Clipboard,
+    Wayland,
     Wtype,
 }
 
@@ -42,7 +42,7 @@ pub struct Cli {
     #[arg(long, short, action = clap::ArgAction::Count, global = true)]
     pub verbose: u8,
 
-    #[arg(long, default_value = "clipboard", value_enum, global = true)]
+    #[arg(long, default_value = "wayland", value_enum, global = true)]
     pub output: Output,
 
     #[arg(long, short = 'D', global = true)]

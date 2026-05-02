@@ -6,9 +6,9 @@ use std::time::Duration;
 
 use super::TextOutput;
 
-pub struct ClipboardOutput;
+pub struct WaylandOutput;
 
-impl ClipboardOutput {
+impl WaylandOutput {
     #[allow(clippy::missing_errors_doc)]
     pub fn new() -> Result<Self> {
         which_wl_copy()?;
@@ -51,7 +51,7 @@ fn which_wtype() -> Result<()> {
         .ok_or_else(|| anyhow::anyhow!("wtype not found. install: xbps-install wtype"))
 }
 
-impl TextOutput for ClipboardOutput {
+impl TextOutput for WaylandOutput {
     fn paste(&self, text: &str) -> Result<()> {
         if text.trim().is_empty() {
             return Ok(());

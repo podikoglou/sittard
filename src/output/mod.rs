@@ -5,5 +5,5 @@ pub trait TextOutput: Send + Sync {
     fn paste(&self, text: &str) -> Result<()>;
 }
 
-pub mod clipboard_output;
+pub mod wayland_output;
 pub mod wtype_output;

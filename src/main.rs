@@ -6,7 +6,7 @@ use sittard::config::{AppConfig, Cli, Commands, Output};
 use sittard::input::evdev_listener::EvdevListener;
 use sittard::model::huggingface::SherpaOnnxProvider;
 use sittard::model::ModelProvider;
-use sittard::output::{clipboard_output::ClipboardOutput, wtype_output::WtypeOutput, TextOutput};
+use sittard::output::{wayland_output::WaylandOutput, wtype_output::WtypeOutput, TextOutput};
 use sittard::transcribe::whisper_engine::SherpaOnnxEngine;
 use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
@@ -80,7 +80,7 @@ async fn main() -> Result<()> {
             let listener = EvdevListener::new(&config.hotkey)?;
             let engine = SherpaOnnxEngine::new(&model_path, config.engine, config.threads)?;
             let output: Box<dyn TextOutput> = match config.output {
-                Output::Clipboard => Box::new(ClipboardOutput::new()?),
+                Output::Wayland => Box::new(WaylandOutput::new()?),
                 Output::Wtype => Box::new(WtypeOutput::new()?),
             };
 
