@@ -9,7 +9,7 @@ pub enum InteractionMode {
 }
 
 #[derive(Clone, Default, ValueEnum)]
-pub enum OutputMethod {
+pub enum Output {
     #[default]
     Clipboard,
     Wtype,
@@ -43,7 +43,7 @@ pub struct Cli {
     pub verbose: u8,
 
     #[arg(long, default_value = "clipboard", value_enum, global = true)]
-    pub output_method: OutputMethod,
+    pub output: Output,
 
     #[arg(long, short = 'D', global = true)]
     pub debug: bool,
@@ -85,7 +85,7 @@ pub struct AppConfig {
     pub language: String,
     pub threads: usize,
     pub mode: InteractionMode,
-    pub output_method: OutputMethod,
+    pub output: Output,
     pub verbose: u8,
     pub debug: bool,
 }
@@ -101,7 +101,7 @@ impl AppConfig {
             language: cli.language,
             threads: cli.threads,
             mode: cli.mode,
-            output_method: cli.output_method,
+            output: cli.output,
             verbose: cli.verbose,
             debug: cli.debug,
         }

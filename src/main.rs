@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Parser;
 use sittard::app::SittardApp;
 use sittard::audio::cpal_recorder::CpalRecorder;
-use sittard::config::{AppConfig, Cli, Commands, OutputMethod};
+use sittard::config::{AppConfig, Cli, Commands, Output};
 use sittard::input::evdev_listener::EvdevListener;
 use sittard::model::huggingface::SherpaOnnxProvider;
 use sittard::model::ModelProvider;
@@ -79,9 +79,9 @@ async fn main() -> Result<()> {
             let recorder = CpalRecorder::new(config.device.as_deref())?;
             let listener = EvdevListener::new(&config.hotkey)?;
             let engine = SherpaOnnxEngine::new(&model_path, config.engine, config.threads)?;
-            let output: Box<dyn TextOutput> = match config.output_method {
-                OutputMethod::Clipboard => Box::new(ClipboardOutput::new()?),
-                OutputMethod::Wtype => Box::new(WtypeOutput::new()?),
+            let output: Box<dyn TextOutput> = match config.output {
+                Output::Clipboard => Box::new(ClipboardOutput::new()?),
+                Output::Wtype => Box::new(WtypeOutput::new()?),
             };
 
             let cancel = CancellationToken::new();
