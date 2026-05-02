@@ -63,9 +63,6 @@ pub enum Commands {
 pub enum ModelEngine {
     Parakeet,
     Canary,
-    Moonshine,
-    WhisperTiny,
-    WhisperBase,
 }
 
 impl fmt::Display for ModelEngine {
@@ -73,9 +70,6 @@ impl fmt::Display for ModelEngine {
         match self {
             ModelEngine::Parakeet => write!(f, "parakeet"),
             ModelEngine::Canary => write!(f, "canary"),
-            ModelEngine::Moonshine => write!(f, "moonshine"),
-            ModelEngine::WhisperTiny => write!(f, "whisper-tiny"),
-            ModelEngine::WhisperBase => write!(f, "whisper-base"),
         }
     }
 }
