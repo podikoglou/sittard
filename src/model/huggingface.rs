@@ -22,9 +22,7 @@ impl SherpaOnnxProvider {
 
     fn model_filename(&self) -> String {
         match &self.engine {
-            ModelEngine::Parakeet => {
-                "sherpa-onnx-nemo-parakeet_tdt_ctc_110m-en-36000-int8".to_string()
-            }
+            ModelEngine::Parakeet => "parakeet-tdt-0.6b-v2-int8".to_string(),
             ModelEngine::Moonshine => "sherpa-onnx-moonshine-tiny-en-int8".to_string(),
             ModelEngine::WhisperTiny => "sherpa-onnx-whisper-tiny.en".to_string(),
             ModelEngine::WhisperBase => "sherpa-onnx-whisper-base".to_string(),
@@ -32,10 +30,15 @@ impl SherpaOnnxProvider {
     }
 
     fn download_url(&self) -> String {
-        format!(
-            "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/{}.tar.bz2",
-            self.model_filename()
-        )
+        match &self.engine {
+            ModelEngine::Parakeet => {
+                "https://blob.handy.computer/parakeet-v2-int8.tar.gz".to_string()
+            }
+            _ => format!(
+                "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/{}.tar.bz2",
+                self.model_filename()
+            ),
+        }
     }
 
     async fn download_model(&self) -> Result<PathBuf> {
@@ -44,14 +47,16 @@ impl SherpaOnnxProvider {
 
         let filename = self.model_filename();
         let final_dir = dir.join(&filename);
-        let temp_path = dir.join(format!("{filename}.tar.bz2.tmp"));
+        let url = self.download_url();
+        let is_gzip = url.ends_with(".tar.gz");
+        let ext = if is_gzip { "tar.gz" } else { "tar.bz2" };
+        let temp_path = dir.join(format!("{filename}.{ext}.tmp"));
 
         if final_dir.exists() {
             tracing::info!("model already extracted at {}", final_dir.display());
             return Ok(final_dir);
         }
 
-        let url = self.download_url();
         tracing::info!("downloading model from {}", url);
 
         let response = reqwest::get(&url).await?;
@@ -87,9 +92,16 @@ impl SherpaOnnxProvider {
         let extract_dir = dir.clone();
         tokio::task::spawn_blocking(move || {
             let file = std::fs::File::open(&temp_path)?;
-            let decoder = bzip2::read::BzDecoder::new(file);
-            let mut archive = tar::Archive::new(decoder);
-            archive.unpack(&extract_dir)?;
+            if is_gzip {
+                use flate2::read::GzDecoder;
+                let decoder = GzDecoder::new(file);
+                let mut archive = tar::Archive::new(decoder);
+                archive.unpack(&extract_dir)?;
+            } else {
+                let decoder = bzip2::read::BzDecoder::new(file);
+                let mut archive = tar::Archive::new(decoder);
+                archive.unpack(&extract_dir)?;
+            }
             std::fs::remove_file(&temp_path)?;
             Ok::<(), anyhow::Error>(())
         })

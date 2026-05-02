@@ -8,7 +8,7 @@ clap = { version = "4", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 cpal = "0.15"
 hound = "3.5"
-sherpa-onnx = "1.13"
+transcribe-rs = { version = "0.3.8", features = ["onnx"] }
 evdev = "0.12"
 reqwest = { version = "0.12", features = ["stream", "json"] }
 serde = { version = "1", features = ["derive"] }
@@ -22,4 +22,6 @@ tracing-subscriber = { version = "0.3", features = ["fmt"] }
 num_cpus = "1"
 futures-util = "0.3"
 bzip2 = "0.4"
+flate2 = "1.0"
 tar = "0.4"
+sha2 = "0.10"
