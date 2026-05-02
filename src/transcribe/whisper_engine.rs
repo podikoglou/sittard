@@ -87,9 +87,6 @@ fn load_model(model_dir: &Path, engine: ModelEngine) -> Result<LoadedModel> {
                 .map_err(|e| anyhow!("failed to load canary model: {e}"))?;
             Ok(LoadedModel::Canary(model))
         }
-        _ => Err(anyhow!(
-            "only Parakeet and Canary models are supported via transcribe-rs"
-        )),
     }
 }
 
