@@ -8,6 +8,13 @@ pub enum InteractionMode {
     Toggle,
 }
 
+#[derive(Clone, Default, ValueEnum)]
+pub enum Output {
+    #[default]
+    Wayland,
+    Wtype,
+}
+
 #[derive(Parser)]
 #[command(name = "sittard", about = "Voice-to-text daemon", version)]
 pub struct Cli {
@@ -34,6 +41,9 @@ pub struct Cli {
 
     #[arg(long, short, action = clap::ArgAction::Count, global = true)]
     pub verbose: u8,
+
+    #[arg(long, default_value = "wayland", value_enum, global = true)]
+    pub output: Output,
 
     #[arg(long, short = 'D', global = true)]
     pub debug: bool,
@@ -75,6 +85,7 @@ pub struct AppConfig {
     pub language: String,
     pub threads: usize,
     pub mode: InteractionMode,
+    pub output: Output,
     pub verbose: u8,
     pub debug: bool,
 }
@@ -90,6 +101,7 @@ impl AppConfig {
             language: cli.language,
             threads: cli.threads,
             mode: cli.mode,
+            output: cli.output,
             verbose: cli.verbose,
             debug: cli.debug,
         }
