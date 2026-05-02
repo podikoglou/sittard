@@ -62,18 +62,14 @@ pub enum Commands {
 #[derive(Clone, Copy, ValueEnum)]
 pub enum ModelEngine {
     Parakeet,
-    Moonshine,
-    WhisperTiny,
-    WhisperBase,
+    Canary,
 }
 
 impl fmt::Display for ModelEngine {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ModelEngine::Parakeet => write!(f, "parakeet"),
-            ModelEngine::Moonshine => write!(f, "moonshine"),
-            ModelEngine::WhisperTiny => write!(f, "whisper-tiny"),
-            ModelEngine::WhisperBase => write!(f, "whisper-base"),
+            ModelEngine::Canary => write!(f, "canary"),
         }
     }
 }
