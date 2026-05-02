@@ -22,33 +22,43 @@ fn which_wl_copy() -> Result<()> {
     Command::new("which")
         .arg("wl-copy")
         .output()
-        .context("wl-copy not found. install: xbps-install wl-clipboard")?
+        .context("wl-copy not found. Please install wl-clipboard using your package manager.")?
         .status
         .success()
         .then_some(())
-        .ok_or_else(|| anyhow::anyhow!("wl-copy not found. install: xbps-install wl-clipboard"))
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "wl-copy not found. Please install wl-clipboard using your package manager."
+            )
+        })
 }
 
 fn which_wl_paste() -> Result<()> {
     Command::new("which")
         .arg("wl-paste")
         .output()
-        .context("wl-paste not found. install: xbps-install wl-clipboard")?
+        .context("wl-paste not found. Please install wl-clipboard using your package manager.")?
         .status
         .success()
         .then_some(())
-        .ok_or_else(|| anyhow::anyhow!("wl-paste not found. install: xbps-install wl-clipboard"))
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "wl-paste not found. Please install wl-clipboard using your package manager."
+            )
+        })
 }
 
 fn which_wtype() -> Result<()> {
     Command::new("which")
         .arg("wtype")
         .output()
-        .context("wtype not found. install: xbps-install wtype")?
+        .context("wtype not found. Please install it using your package manager.")?
         .status
         .success()
         .then_some(())
-        .ok_or_else(|| anyhow::anyhow!("wtype not found. install: xbps-install wtype"))
+        .ok_or_else(|| {
+            anyhow::anyhow!("wtype not found. Please install it using your package manager.")
+        })
 }
 
 impl TextOutput for WaylandOutput {
