@@ -24,9 +24,6 @@ impl SherpaOnnxProvider {
         match &self.engine {
             ModelEngine::Parakeet => "parakeet-tdt-0.6b-v2-int8".to_string(),
             ModelEngine::Canary => "canary-1b-v2".to_string(),
-            ModelEngine::Moonshine => "sherpa-onnx-moonshine-tiny-en-int8".to_string(),
-            ModelEngine::WhisperTiny => "sherpa-onnx-whisper-tiny.en".to_string(),
-            ModelEngine::WhisperBase => "sherpa-onnx-whisper-base".to_string(),
         }
     }
 
@@ -36,10 +33,6 @@ impl SherpaOnnxProvider {
                 "https://blob.handy.computer/parakeet-v2-int8.tar.gz".to_string()
             }
             ModelEngine::Canary => "https://blob.handy.computer/canary-1b-v2.tar.gz".to_string(),
-            _ => format!(
-                "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/{}.tar.bz2",
-                self.model_filename()
-            ),
         }
     }
 
