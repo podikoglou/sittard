@@ -10,8 +10,8 @@ pub enum InteractionMode {
 
 #[derive(Clone, Default, ValueEnum)]
 pub enum Output {
-    #[default]
     Wayland,
+    #[default]
     Wtype,
 }
 
