@@ -98,9 +98,9 @@ impl TextOutput for WaylandOutput {
         // Wait a bit for the compositor to sync the clipboard
         thread::sleep(Duration::from_millis(50));
 
-        // Paste via Ctrl+V
+        // Paste via Ctrl+V (wtype requires modifiers to be handled separately)
         let status = Command::new("wtype")
-            .args(["-k", "ctrl+v"])
+            .args(["-M", "ctrl", "-k", "v", "-m", "ctrl"])
             .status()
             .context("failed to run wtype")?;
         ensure!(status.success(), "wtype exited with status: {status}");
